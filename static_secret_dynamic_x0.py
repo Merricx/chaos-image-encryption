@@ -5,22 +5,47 @@ from PIL import Image
 from Crypto.Util.strxor import strxor
 
 # Secret
-p = 10#random.randint(2,250)
-q = 20#random.randint(2,250)
+p = 10 #random.randint(2,250)
+q = 20 #random.randint(2,250)
 m = 5
-init = 0.578#random.random()
-r = 3 + 0.4764#random.random()
+r = 2.2 + random.random()*0.1
 
 def encryption_oracle(plain_image):
-
+    init = random.random()
     return encryption.encrypt(plain_image, p, q, m, init, r)
 
-def logistic_map_analysis():
-    init = 0.8927173285063715
-    r = 3.5157732279084075
-    print('x0:', init)
-    print('r :', r)
-    print('keystream:', encryption.logistic_map(init, r, 100, 10))
-    print()
+def weak_logistic_map():
 
-logistic_map_analysis()
+    # Repeated static keystream
+    init = random.random()
+    r = 2.2 + random.random()*0.1
+    keystream = encryption.logistic_map(init, r, 1000)
+    print("keystream:", keystream)
+
+    # Repeated periodic keystream
+    init = random.random()
+    r = 3.4 + random.random()*0.1
+    keystream = encryption.logistic_map(init, r, 1000)
+    print("keystream:", keystream)
+
+def recover_pq(size):
+    payload = Image.new("RGB", (size, size))
+    payload.putpixel((1,0), (255,255,255))
+
+    response = encryption_oracle(payload)
+
+    cipher_img = response.load()
+
+    permuted = []
+    for x in range(size):
+        for y in range(size):
+            lsb = cipher_img[x,y][0] & 0xF
+            if lsb == 255 & 0xF:
+                permuted.append((x,y))
+        
+        if len(permuted) == 1:
+            break
+
+    print("x1: ", permuted[0][0])
+    print("y1: ", permuted[0][1])
+    print("\n[*] Recover p and q by running recover_pq.sage script")
